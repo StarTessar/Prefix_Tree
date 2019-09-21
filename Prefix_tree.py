@@ -8,6 +8,7 @@ class Node:
 
         self.level = level
         self.num_in_level = num_in_level
+        self.score = 0
 
     def replace_this_node(self, string):
         """Замена строки нода вместо текущей"""
@@ -74,13 +75,48 @@ class Node:
             # Если ничего не найдено, значит общего нет
             return None, None
 
+    def repair_string_form_chain(self):
+        """Восстановление строки из отдельного нода"""
+        repaired_string = []
+        target_node = self
+        while target_node:
+            repaired_string.insert(0, str(target_node))
+            target_node = target_node.parent
+
+        return repaired_string
+
+    def refresh_levels(self):
+        """Обновление уровня в дереве"""
+        for child in self.childs:
+            child.level = self.level + 1
+            child.refresh_levels()
+
+    def print_node(self):
+        """Рекурсивная распечатка текущего нода и его потомков"""
+        spaces = '_' * self.level
+        node_map = '{}{}:\n'.format(spaces, self)
+        for child in self.childs:
+            node_map += child.print_node()
+
+        return node_map
+
+
+class Tree:
+    def __init__(self):
+        self.root = Node('')
+
     def add_string(self, string):
         """Поиск в дереве и добавление строки"""
-        found_node, str_result = self.search_str(string)
+        found_node, str_result = self.root.search_str(string)
 
         if not str_result:
+            node_substr_list = found_node.repair_string_form_chain()
+            node_substr_len = len(''.join(node_substr_list[:-1]))
+
             node_string = found_node.string
-            compare_list = zip(node_string, string)
+            target_string = string[node_substr_len:]
+
+            compare_list = zip(node_string, target_string)
             compare_result = [num for num, pair in enumerate(compare_list)
                               if pair[0] != pair[1]]
 
@@ -93,14 +129,19 @@ class Node:
                     same_len = compare_result[0]
                     same_string = node_string[:same_len]
                     first_substr = node_string[same_len:]
-                    second_substr = string[same_len:]
+                    second_substr = target_string[same_len:]
 
                     new_parent_node = found_node.replace_this_node(same_string)
                     first_child = new_parent_node.make_child(first_substr)
                     second_child = new_parent_node.make_child(second_substr)
 
-                    first_child.childs = found_node.childs
+                    first_child.childs = found_node.childs.copy()
                     new_parent_node.childs = [first_child, second_child]
+
+                    first_child.score = new_parent_node.score
+                    second_child.score += 1
+                    new_parent_node.score = 0
+
 
                     # print('Разбит на потомков')
                 else:
@@ -113,44 +154,70 @@ class Node:
                 # Если список пуст, значит одна строка содержит другую
                 node_string = found_node.string
                 node_string_len = len(node_string)
-                string_len = len(string)
+                string_len = len(target_string)
                 if node_string_len < string_len:
                     # Если строка нода короче, значит нужно добавить потомка
-                    new_child_string = string[node_string_len:]
+                    new_child_string = target_string[node_string_len:]
                     new_child_node = found_node.make_child(new_child_string)
 
                     found_node.childs.append(new_child_node)
+
+                    new_child_node.score += 1
                 else:
                     # Если строка нода длинее, значит надо его разбить
-                    new_parent_string = string
+                    new_parent_string = target_string
                     new_child_string = node_string[string_len:]
 
                     new_parent_node = found_node.replace_this_node(new_parent_string)
                     new_child = new_parent_node.make_child(new_child_string)
 
-                    new_child.childs = found_node.childs
+                    new_child.childs = found_node.childs.copy()
                     new_parent_node.childs.append(new_child)
+
+                    new_parent_node.score += 1
+                    pass
 
                 # print('Содержит')
         else:
-            pass
+            found_node.score += 1
             # print('    Строка "{}" уже здесь'.format(string))
 
+    def print_tree(self):
+        """Распечатка дерева"""
+        self.root.refresh_levels()
+        tree_map = self.root.print_node()
 
-class Tree:
-    def __init__(self):
-        self.root = Node('')
+        return tree_map
+
+    def find_string(self, string):
+        """Поиск строки в дереве и возвращение её параметров"""
+        found_node, str_result = self.root.search_str(string)
+        string_path = found_node.repair_string_form_chain()
+        string_path = '-'.join(string_path)[1:]
+
+        if any([not str_result, found_node.score < 1]):
+            string_path += '~'
+            print('Строка не найдена')
+
+        return string_path, found_node.level, found_node.num_in_level
 
 
 if __name__ == '__main__':
     new_tree = Tree()
-    new_tree.root.add_string('hello')
-    new_tree.root.add_string('hell')
-    new_tree.root.add_string('hal')
+    new_tree.add_string('табак')
+    new_tree.add_string('тяпка')
+    new_tree.add_string('татуировочного')
+    new_tree.add_string('татуировочному')
 
-    new_tree.root.add_string('boo')
-    new_tree.root.add_string('boom')
-    new_tree.root.add_string('bool')
+    new_tree.add_string('татуировочный')
+    new_tree.add_string('татуировочным')
+    new_tree.add_string('татуировочном')
+
+    new_tree.root.refresh_levels()
+
+    path, node_lev, node_num = new_tree.find_string('та')
+    print(path)
+    # print(new_tree.print_tree())
 
     a = 1
 
