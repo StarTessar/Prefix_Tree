@@ -8,7 +8,9 @@ class Node:
 
         self.level = level
         self.num_in_level = num_in_level
+
         self.score = 0
+        self.total_childs_count = 0
 
     def replace_this_node(self, string):
         """Замена строки нода вместо текущей"""
@@ -41,6 +43,51 @@ class Node:
     def __str__(self):
         """Строковое представление"""
         return self.string
+
+    def __int__(self):
+        """Числовое представление хранимой информации"""
+        return sum(map(ord, self.string))
+
+    def __counts__(self):
+        """Числовое предстваление. Показывает число детей во всех ветвях"""
+        local_childs = len(self.childs)
+
+        for child in self.childs:
+            local_childs += child.__counts__()
+
+        self.total_childs_count = local_childs
+        return local_childs
+
+    def __eq__(self, other):
+        """Равенство нодов"""
+        return self.string == other.string
+
+    def __ne__(self, other):
+        """Не равны"""
+        return self.string != other.string
+
+    def __lt__(self, other):
+        """Текущий меньше"""
+        return self.string < other.string
+
+    def __gt__(self, other):
+        """Текущий больше"""
+        return self.string > other.string
+
+    def __le__(self, other):
+        """Текущий меньше или равен"""
+        return self.string <= other.string
+
+    def __ge__(self, other):
+        """Текущий больше или равен"""
+        return self.string >= other.string
+
+    def __deep_sorted__(self):
+        """Сортировка всех детей в алфавитном порядке"""
+        self.childs = sorted(self.childs)
+
+        for child in self.childs:
+            child.__deep_sorted__()
 
     def _search_in_childs(self, string):
         """Поиск строки в потомках"""
@@ -90,6 +137,14 @@ class Node:
         for child in self.childs:
             child.level = self.level + 1
             child.refresh_levels()
+
+    def refresh_count(self):
+        """Обновление количества нодов в дереве"""
+        return self.__counts__()
+
+    def full_sort(self):
+        """Полная сортировка"""
+        self.__deep_sorted__()
 
     def print_node(self):
         """Рекурсивная распечатка текущего нода и его потомков"""
@@ -141,7 +196,6 @@ class Tree:
                     first_child.score = new_parent_node.score
                     second_child.score += 1
                     new_parent_node.score = 0
-
 
                     # print('Разбит на потомков')
                 else:
@@ -214,10 +268,13 @@ if __name__ == '__main__':
     new_tree.add_string('татуировочном')
 
     new_tree.root.refresh_levels()
+    counts = new_tree.root.refresh_count()
+    new_tree.root.full_sort()
 
-    path, node_lev, node_num = new_tree.find_string('та')
-    print(path)
-    # print(new_tree.print_tree())
+    # path, node_lev, node_num = new_tree.find_string('та')
+    # print(path)
+    print(counts)
+    print(new_tree.print_tree())
 
     a = 1
 
