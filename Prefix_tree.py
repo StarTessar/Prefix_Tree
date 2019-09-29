@@ -112,7 +112,7 @@ class Node:
             # Сравнение строки с собственной
             #    Если равны, значит нужный нод найден
             return self, string
-        elif self.string == string[:len(self.string)]:
+        elif string.startswith(self.string):
             # Содержится ли строка нода в начале искомой строки
             #    Если да, то ищем в потомках
             return self._search_in_childs(string[len(self.string):])
@@ -251,9 +251,11 @@ class Tree:
 
         if any([not str_result, found_node.score < 1]):
             string_path += '~'
-            print('Строка не найдена')
+            success = False
+        else:
+            success = False
 
-        return string_path, found_node.level, found_node.num_in_level
+        return success, string_path, found_node.level, found_node.num_in_level
 
 
 if __name__ == '__main__':
